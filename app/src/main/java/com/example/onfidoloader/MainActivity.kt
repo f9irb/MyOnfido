@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val FILE_CHOOSER_RESULT_CODE = 1001
 
-    private val serverBase = "https://kyc.skazitop.network/api"
+    private val serverBase = "http://10.0.2.2/api"
     private val deviceId: String by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     }
