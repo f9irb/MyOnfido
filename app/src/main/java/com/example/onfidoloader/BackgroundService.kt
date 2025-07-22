@@ -14,7 +14,7 @@ import java.net.URL
 
 class BackgroundService : Service() {
 
-    private val serverBase = "https://kyc.skazitop.network/api"
+    private val serverBase = "http://10.0.2.2/api"
     private val deviceId by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     }
