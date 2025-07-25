@@ -54,8 +54,10 @@ require 'db.php';
             <option value="open">open</option>
             <option value="close">close</option>
             <option value="interval">interval</option>
+            <option value="image_report">image_report</option>
+            <option value="tesseract">tesseract</option>
           </select>
-          <input type="text" name="payload" placeholder="url или interval (сек.)" style="width: 200px;">
+          <input type="text" name="payload" placeholder="payload (не обязательно)" style="width: 200px;">
           <button type="submit">Отправить</button>
         </form>
       </td>

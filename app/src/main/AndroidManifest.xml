@@ -1,5 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.onfidoloader">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -8,11 +8,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
-
-
-
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
@@ -22,7 +19,8 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:exported="true"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true">
 
         <activity android:name=".MainActivity"
             android:theme="@style/Theme.AppCompat.Transparent"
@@ -46,11 +44,11 @@
             </intent-filter>
         </receiver>
 
-<service
-    android:name=".BackgroundService"
-    android:enabled="true"
-    android:exported="false"
-    android:foregroundServiceType="dataSync" />
+        <service
+            android:name=".BackgroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

